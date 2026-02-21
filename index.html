@@ -4,140 +4,112 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Ramadan Wallpaper Pro</title>
-
 <style>
 html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-    background: #000000;
+    background: #000;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     color: white;
 }
-
-.wallpaper {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 70px 30px 90px 30px;
-}
-
-.title {
-    text-align: center;
-    font-size: 14px;
-    letter-spacing: 4px;
-    color: #666;
-}
-
-.day {
-    text-align: center;
-    font-size: 130px;
-    font-weight: 600;
-    margin-top: 20px;
-    color: #00e5d4;
-    animation: glow 2s infinite alternate;
-}
-
-.date {
-    text-align: center;
-    margin-top: 10px;
-    font-size: 18px;
-    color: #aaa;
-}
-
-.progress-container {
-    height: 4px;
-    background: #111;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress {
-    height: 100%;
-    width: 0%;
-    background: #00e5d4;
-    transition: width 1s ease;
-}
-
-.footer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 12px;
-    color: #444;
-}
-
-@keyframes glow {
-    from { text-shadow: 0 0 10px rgba(0,229,212,0.4); }
-    to { text-shadow: 0 0 30px rgba(0,229,212,0.8); }
+canvas {
+    display: block;
 }
 </style>
 </head>
-
 <body>
-
-<div class="wallpaper">
-    <div>
-        <div class="title">RAMADAN</div>
-        <div class="day" id="ramadanDay">1</div>
-        <div class="date" id="currentDate"></div>
-    </div>
-
-    <div>
-        <div class="progress-container">
-            <div class="progress" id="progressBar"></div>
-        </div>
-        <div class="footer">19 FEB — 21 MAR</div>
-    </div>
-</div>
-
+<canvas id="wallpaper"></canvas>
 <script>
+const canvas = document.getElementById('wallpaper');
+const ctx = canvas.getContext('2d');
 
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Рамадан
 const startDate = new Date("2026-02-19");
 const endDate = new Date("2026-03-21");
 const totalDays = 30;
 
-// Получаем время заката по геолокации
-async function getSunset(lat, lon) {
-    const response = await fetch(
-        `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`
-    );
+// Геолокация: Москва
+const lat = 55.751244;
+const lon = 37.618423;
+
+// Цвета
+const bgColor = "#000000";
+const textColor = "#00e5d4";
+const progressColor = "#00e5d4";
+
+// Получаем время заката
+async function getSunset() {
+    const response = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`);
     const data = await response.json();
     return new Date(data.results.sunset);
 }
 
-async function calculateDay() {
+// Вычисляем текущий день Рамадана
+async function getCurrentDay() {
     const now = new Date();
+    const sunset = await getSunset();
 
-    navigator.geolocation.getCurrentPosition(async position => {
-        const sunset = await getSunset(
-            position.coords.latitude,
-            position.coords.longitude
-        );
+    let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let diff = Math.floor((today - startDate)/(1000*60*60*24)) + 1;
 
-        let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        let diff = Math.floor((today - startDate) / (1000*60*60*24)) + 1;
+    if(now > sunset) diff += 1; // после заката переходим на следующий день
+    if(diff < 1) diff = 1;
+    if(diff > totalDays) diff = totalDays;
 
-        // если после заката — следующий день
-        if (now > sunset) diff += 1;
-
-        if (diff < 1) diff = 1;
-        if (diff > totalDays) diff = totalDays;
-
-        document.getElementById("ramadanDay").innerText = diff;
-        document.getElementById("currentDate").innerText =
-            now.toLocaleDateString("ru-RU", { day:'numeric', month:'long' });
-
-        document.getElementById("progressBar").style.width =
-            (diff / totalDays * 100) + "%";
-    });
+    return diff;
 }
 
-calculateDay();
+// Рисуем обои
+async function drawWallpaper() {
+    const day = await getCurrentDay();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("ru-RU", { day: 'numeric', month: 'long' });
 
+    // фон
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // RAMADAN
+    ctx.fillStyle = "#666";
+    ctx.font = `${Math.floor(canvas.height*0.03)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("RAMADAN", canvas.width/2, canvas.height*0.15);
+
+    // День
+    ctx.fillStyle = textColor;
+    ctx.font = `bold ${Math.floor(canvas.height*0.25)}px sans-serif`;
+    ctx.fillText("День " + day, canvas.width/2, canvas.height*0.5);
+
+    // Дата
+    ctx.fillStyle = "#aaa";
+    ctx.font = `${Math.floor(canvas.height*0.05)}px sans-serif`;
+    ctx.fillText(dateStr, canvas.width/2, canvas.height*0.6);
+
+    // Прогресс-бар
+    const barWidth = canvas.width*0.7;
+    const barHeight = canvas.height*0.02;
+    const x = (canvas.width - barWidth)/2;
+    const y = canvas.height*0.75;
+    ctx.fillStyle = "#111";
+    ctx.fillRect(x, y, barWidth, barHeight);
+    ctx.fillStyle = progressColor;
+    ctx.fillRect(x, y, (day/totalDays)*barWidth, barHeight);
+}
+
+// Первичная отрисовка
+drawWallpaper();
+
+// Автообновление каждые 10 минут
+setInterval(drawWallpaper, 600000);
 </script>
-
 </body>
 </html>
