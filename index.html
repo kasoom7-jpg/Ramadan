@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramadan Tracker</title>
+<style>
+body {
+    margin: 0;
+    background: #000;
+    color: #00e5d4;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+.container {
+    width: 90%;
+}
+.day {
+    font-size: 80px;
+    font-weight: 600;
+}
+.date {
+    font-size: 20px;
+    color: #aaa;
+    margin-top: 10px;
+}
+.progress-bar {
+    margin-top: 40px;
+    height: 8px;
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress {
+    height: 100%;
+    background: #00e5d4;
+    width: 0%;
+}
+.footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: #666;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="day" id="ramadanDay">...</div>
+    <div class="date" id="currentDate"></div>
+    <div class="progress-bar">
+        <div class="progress" id="progressBar"></div>
+    </div>
+    <div class="footer">Ramadan Progress</div>
+</div>
+
+<script>
+
+const startDate = new Date("2026-02-19");
+const endDate = new Date("2026-03-20");
+
+function getRamadanDay() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    if (diff < 1) return 0;
+    if (today > endDate) return 30;
+
+    return diff;
+}
+
+function updateDisplay() {
+    const day = getRamadanDay();
+    document.getElementById("ramadanDay").innerText = 
+        day > 0 ? "День " + day : "Ожидание Рамадана";
+
+    const now = new Date();
+    document.getElementById("currentDate").innerText = now.toLocaleDateString("ru-RU");
+
+    let progress = (day / 30) * 100;
+    document.getElementById("progressBar").style.width = progress + "%";
+}
+
+updateDisplay();
+</script>
+
+</body>
+</html>
